@@ -25,7 +25,8 @@ public:
 		NOTDIR = 2,               /* cd命令操纵数据文件 */
 		NOENT = 3,                 /* 文件不存在 */
 		BADF = 4,                  /* 文件标识fd错误 */
-		NOOUTENT = 5               /* windows外部文件不存在 */
+		NOOUTENT = 5,               /* windows外部文件不存在 */
+		NOSPACE = 6                 /* 磁盘空间不足 */
 	};
 	Kernel();
 	~Kernel();

@@ -16,7 +16,6 @@ Inode* InodeTable::IGet(int inumber)
 	BufferManager* bufMgr = Kernel::getInstance()->getBufMgr();
 	while (true)
 	{
-		/* 检查指定设备dev中编号为inumber的外存Inode是否有内存拷贝 */
 		int index = this->IsLoaded(inumber);
 		if (index >= 0)	/* 找到内存拷贝 */
 		{

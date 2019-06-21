@@ -23,6 +23,8 @@ int main()
 					else if (k->error == Kernel::NOENT)
 						cout << result[1] << ": No such file or directory" << endl;
 				}
+				else
+					k->cd("/");
 			}
 			else if (strcmp(result[0], "fformat") == 0)
 			{
@@ -32,11 +34,16 @@ int main()
 			else if (strcmp(result[0], "mkdir") == 0)
 			{
 				if (result.size() > 1)
+				{
 					k->mkdir(result[1]);
+					if (k->error == Kernel::NOENT)
+						cout << "No such file or directory" << endl;
+					if (k->error == Kernel::ISDIR)
+						cout << result[1] << ": Is a directory" << endl;
+				}
 				else
 					cout << "mkdir: missing operand" << endl;
-				if (k->error == Kernel::NOENT)
-					cout << "No such file or directory" << endl;
+				
 			}
 			else if (strcmp(result[0], "ls") == 0)
 			{
@@ -46,32 +53,43 @@ int main()
 			{
 				int fd;
 				if (result.size() > 1)
+				{
 					fd = k->open(result[1], 511);
+					if (k->error == Kernel::NO_ERROR)
+						cout << "fd = " << fd << endl;
+					else if (k->error == Kernel::ISDIR)
+						cout << result[1] << ": Is a directory" << endl;
+					else if (k->error == Kernel::NOENT)
+						cout << result[1] << ": No such file or directory" << endl;
+				}	
 				else
 					cout << "fopen: missing operand" << endl;
-				if (k->error == Kernel::NO_ERROR)
-					cout << "fd = " << fd << endl;
-				else if (k->error == Kernel::ISDIR)
-					cout << result[1] << ": Is a directory" << endl;
-				else if (k->error == Kernel::NOENT)
-					cout << result[1] << ": No such file or directory" << endl;
+				
 			}
 			else if (strcmp(result[0], "fcreate") == 0)
 			{
 				int fd;
 				if (result.size() > 1)
+				{
 					fd = k->create(result[1], 511);
+					
+					if (k->error == Kernel::NOENT)
+						cout << "No such file or directory" << endl;
+					if (k->error == Kernel::ISDIR)
+						cout << result[1] << ": Is a directory" << endl;
+					if (k->error == Kernel::NO_ERROR)
+						cout << "fd = " << fd << endl;
+				}
 				else
 					cout << "fcreate: missing operand" << endl;
-				if (k->error == Kernel::NO_ERROR)
-					cout << "fd = " << fd << endl;
+				
 			}
 			else if (strcmp(result[0], "fclose") == 0)
 			{
 				if (result.size() > 1)
 					k->close(atoi(result[1]));
 				else
-					cout << "fcreate: missing operand" << endl;
+					cout << "fclose: missing operand" << endl;
 			}
 			else if (strcmp(result[0], "fread") == 0)
 			{
@@ -91,7 +109,9 @@ int main()
 						if (actual > 0)
 						{
 							for (int i = 0; i < actual; i++)
-								cout << buf[i];
+								//cout << buf[i];  
+								//cout << buf[i] << endl;
+								printf("%c", buf[i]);
 							cout << endl;
 						}
 						cout << "Actually read " << actual << " bytes." << endl;
@@ -108,7 +128,7 @@ int main()
 				{
 					if (atoi(result[2]) > strlen(result[3]))
 					{
-						cout << "nbytes must be smaller than the length of the string" << endl;
+						cout << "nbytes can\'t be larger than the length of the string" << endl;
 						continue;
 					}
 					actual = k->fwrite(atoi(result[1]), result[3], atoi(result[2]));
@@ -131,16 +151,22 @@ int main()
 			{
 				if (result.size() > 3)
 				{
-					k->fseek(atoi(result[1]), atoi(result[2]), atoi(result[3]));
-					if (k->error == Kernel::BADF)
-						cout << atoi(result[1]) << ": Wrong fd." << endl;
+					if (atoi(result[3]) >= 0 && atoi(result[3]) <= 5)
+					{
+						k->fseek(atoi(result[1]), atoi(result[2]), atoi(result[3]));
+						if (k->error == Kernel::BADF)
+							cout << atoi(result[1]) << ": Wrong fd." << endl;
+					}
+					else
+						cout << result[3] << ": Wrong ptrname." << endl;
+					
 				}
 				else
 				{
 					cout << "fseek: missing operand" << endl;
 				}
 			}
-			if (strcmp(result[0], "fdelete") == 0)
+			else if (strcmp(result[0], "fdelete") == 0)
 			{
 				if (result.size() > 1)
 				{
@@ -153,7 +179,7 @@ int main()
 					cout << "fdelete: missing operand" << endl;
 				}
 			}
-			if (strcmp(result[0], "fmount") == 0)
+			else if (strcmp(result[0], "fmount") == 0)
 			{
 				if (result.size() > 2)
 				{
@@ -162,6 +188,8 @@ int main()
 						cout << result[2] << ": No such file or directory" << endl;
 					else if (k->error == Kernel::NOOUTENT)
 						cout << result[1] << ": No such file or directory" << endl;
+					else if (k->error == Kernel::ISDIR)
+						cout << result[2] << ": Is a directory" << endl;
 				}
 				else
 				{
@@ -173,6 +201,9 @@ int main()
 				cout << "Bye!" << endl;
 				k->clear();
 				break;
+			}
+			else {
+				cout << "command \'" << result[0] << "\' not found" << endl;
 			}
 		}
 		cout << endl;

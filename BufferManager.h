@@ -31,7 +31,6 @@ public:
 	void Bawrite(Buf* bp);				/* 异步写磁盘块 */
 	void ClrBuf(Buf* bp);				/* 清空缓冲区内容 */
 	void Bflush();				        /* 将dev指定设备队列中延迟写的缓存全部输出到磁盘 */
-	Buf& GetBFreeList();				/* 获取自由缓存队列控制块Buf对象引用 */
 
 private:
 	void NotAvail(Buf* bp);				/* 从自由队列中摘下指定的缓存控制块buf */

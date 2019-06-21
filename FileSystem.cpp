@@ -64,11 +64,11 @@ Buf* FileSystem::Alloc()
 	BufferManager* bufMgr = Kernel::getInstance()->getBufMgr();
 	Buf* pBuf;
 	Kernel* k = Kernel::getInstance();
-
 	blkno = spb->s_free[--spb->s_nfree];
 
 	if (blkno == 0)
 	{
+		k->error = Kernel::NOSPACE;
 		spb->s_nfree = 0;
 		return NULL;
 	}
@@ -198,7 +198,6 @@ void FileSystem::Free(int blkno)
 	BufferManager* bufMgr = Kernel::getInstance()->getBufMgr();
 
 	spb->s_fmod = 1;
-
 	if (spb->s_nfree <= 0)
 	{
 		spb->s_nfree = 1;

@@ -27,9 +27,7 @@ public:
 	void Creat();             /* 新建一个文件 */
 	void Close();             /* 关闭一个文件 */
 	void ChDir();             /* 改变当前工作目录 */
-	void SetCurDir(char* pathname);          /* 设置当前工作路径 */
 	Inode* MakNode(unsigned int mode); /* 新建一个文件时，分配资源 */
-	void WriteDir(Inode* pInode); /* 向父目录的目录文件写入目录项 */
 	void Open1(Inode* pInode, int mode, int trf); /* Open和Create方法的公共部分 */
 	void Read();          /* 读文件 */
 	void Write();         /* 写文件 */

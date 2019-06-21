@@ -58,10 +58,10 @@ void FileManager::Open1(Inode* pInode, int mode, int trf)
 		return;
 	}
 
-
 	/* 在creat文件的时候搜索到同文件名的文件，释放该文件所占据的所有盘块 */
 	if (trf == 1)
 		pInode->ITrunc();
+		
 
 	/* 分配打开文件控制块File结构 */
 	File* pFile = k->getOpenFileTable()->FAlloc();
@@ -73,7 +73,7 @@ void FileManager::Open1(Inode* pInode, int mode, int trf)
 	/* 设置打开文件方式，建立File结构和内存Inode的勾连关系 */
 	pFile->f_flag = mode & (File::FREAD | File::FWRITE);
 	pFile->f_inode = pInode;
-	if (trf == 2 && k->isDir)
+	if (trf != 0 && k->isDir)
 		pInode->i_mode |= Inode::IFDIR;
 	return;
 }
@@ -92,13 +92,6 @@ Inode* FileManager::MakNode(unsigned int mode)
 	pInode->i_flag |= (Inode::IACC | Inode::IUPD);
 	pInode->i_mode = mode | Inode::IALLOC;
 	pInode->i_nlink = 1;
-	this->WriteDir(pInode);
-	return pInode;
-}
-
-void FileManager::WriteDir(Inode* pInode)
-{
-	Kernel* k = Kernel::getInstance();
 
 	/* 设置目录项中Inode编号部分 */
 	k->dent.inode = pInode->i_number;
@@ -111,6 +104,7 @@ void FileManager::WriteDir(Inode* pInode)
 	/* 将目录项写入父目录文件 */
 	k->pdir->WriteI();
 	k->getInodeTable()->IPut(k->pdir);
+	return pInode;
 }
 
 void FileManager::Close()
@@ -142,15 +136,9 @@ void FileManager::ChDir()
 	}
 	k->getInodeTable()->IPut(k->cdir);
 	k->cdir = pInode;
-	this->SetCurDir(k->pathname);
-}
 
-void FileManager::SetCurDir(char* pathname)
-{
-	Kernel* k = Kernel::getInstance();
-
-	/* 路径不是从根目录'/'开始 */
-	if (pathname[0] != '/')
+	/* 设置当前工作目录字符串curdir */
+	if (k->pathname[0] != '/')
 	{
 		int length = Utility::strlen(k->curdir);
 		if (k->curdir[length - 1] != '/')
@@ -158,12 +146,13 @@ void FileManager::SetCurDir(char* pathname)
 			k->curdir[length] = '/';
 			length++;
 		}
-		Utility::StringCopy(pathname, k->curdir + length);
+		Utility::StringCopy(k->pathname, k->curdir + length);
 	}
 	/* 如果是从根目录'/'开始，则取代原有工作目录 */
-	else	
-		Utility::StringCopy(pathname, k->curdir);
+	else
+		Utility::StringCopy(k->pathname, k->curdir);
 }
+
 
 Inode* FileManager::NameI(char(*func)(), enum DirectorySearchMode mode)
 {
@@ -175,16 +164,9 @@ Inode* FileManager::NameI(char(*func)(), enum DirectorySearchMode mode)
 	Kernel* k = Kernel::getInstance();
 	BufferManager* bufMgr = k->getBufMgr();
 
-	/*
-	 * 如果该路径是'/'开头的，从根目录开始搜索，
-	 * 否则从进程当前工作目录开始搜索。
-	 */
-
 	pInode = k->cdir;
 	if ('/' == (curchar = (*func)()))
 		pInode = this->rootDirInode;
-
-	/* 检查该Inode是否正在被使用，以及保证在整个目录搜索过程中该Inode不被释放 */
 	k->getInodeTable()->IGet(pInode->i_number);
 
 	/* 允许出现////a//b 这种路径 这种路径等价于/a/b */
@@ -193,12 +175,8 @@ Inode* FileManager::NameI(char(*func)(), enum DirectorySearchMode mode)
 	
 	/* 如果试图更改和删除当前目录文件则出错 */
 	if ('\0' == curchar && mode != FileManager::OPEN)
-	{
-		k->error = Kernel::NOENT;
 		goto out;
-	}
 		
-	
 	/* 外层循环每次处理pathname中一段路径分量 */
 	while (true)
 	{
@@ -305,11 +283,6 @@ Inode* FileManager::NameI(char(*func)(), enum DirectorySearchMode mode)
 				break;
 		}
 
-		/*
-		 * 从内层目录项匹配循环跳至此处，说明pathname中
-		 * 当前路径分量匹配成功了，还需匹配pathname中下一路径
-		 * 分量，直至遇到'\0'结束。
-		 */
 		if (pBuf != NULL)
 			bufMgr->Brelse(pBuf);
 
@@ -317,15 +290,10 @@ Inode* FileManager::NameI(char(*func)(), enum DirectorySearchMode mode)
 		if (FileManager::DELETE == mode && '\0' == curchar)
 			return pInode;
 
-		/*
-		 * 匹配目录项成功，则释放当前目录Inode，根据匹配成功的
-		 * 目录项dent.inode字段获取相应下一级目录或文件的Inode。
-		 */
 		k->getInodeTable()->IPut(pInode);
 		pInode = k->getInodeTable()->IGet(k->dent.inode);
-		/* 回到外层While(true)循环，继续匹配Pathname中下一路径分量 */
 
-		if (pInode == NULL)	/* 获取失败 */
+		if (pInode == NULL)	
 			return NULL;
 	}
 out:

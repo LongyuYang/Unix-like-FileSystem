@@ -138,18 +138,7 @@ void BufferManager::Bwrite(Buf *bp)
 	bp->b_flags &= ~(Buf::B_READ | Buf::B_DONE | Buf::B_ERROR | Buf::B_DELWRI);
 	bp->b_wcount = BufferManager::BUFFER_SIZE;		/* 512字节 */
 	writeArg* arg = new writeArg(this, bp);
-	/* 异步写，创建新线程 */
-	if (flags & Buf::B_ASYNC)
-	{
-		writing(arg);
-		//thread t(writing, arg);
-		//t.detach();
-	}
-	/* 同步写 */
-	else
-	{
-		writing(arg);
-	}
+	writing(arg);
 	return;
 }
 
@@ -182,10 +171,6 @@ loop:
 		}
 }
 
-Buf& BufferManager::GetBFreeList()
-{
-	return this->bFreeList;
-}
 
 void BufferManager::ClrBuf(Buf *bp)
 {

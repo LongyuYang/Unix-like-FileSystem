@@ -36,7 +36,6 @@ void Kernel::initialize()
 	this->fileSys->LoadSuperBlock();
 	this->fileMgr->rootDirInode = this->k_InodeTable->IGet(FileSystem::ROOTINO);
 	this->cdir = this->fileMgr->rootDirInode;
-	this->callReturn = -1;
 	Utility::StringCopy("/", this->curdir);
 }
 
@@ -98,16 +97,32 @@ void Kernel::format()
 	f.close();
 	/* 格式化SuperBlock */
 	Buf* pBuf;
-	SuperBlock spb;
+	SuperBlock &spb = (*this->spb);
 	spb.s_isize = FileSystem::INODE_ZONE_SIZE;
 	spb.s_fsize = FileSystem::DATA_ZONE_SIZE;
+	spb.s_ninode = 100;
+	spb.s_nfree = 0;
+	/*
 	spb.s_nfree = spb.s_ninode = 100;
 	spb.s_fmod = 0;
+	
 	for (int i = 0; i < 100; i++)
 	{
 		spb.s_inode[99-i] = i + 1;
 		spb.s_free[99-i] = FileSystem::DATA_ZONE_START_SECTOR + i;
 	}
+	*/
+	for (int i = 0; i < 100; i++)
+	{
+		spb.s_inode[99 - i] = i + 1;
+	}
+	
+	for (int i = FileSystem::DATA_ZONE_END_SECTOR; i >= FileSystem::DATA_ZONE_START_SECTOR; i--)
+	{
+		this->fileSys->Free(i);
+	}
+	//this->fileSys->Update();
+	
 	for (int i = 0; i < 2; i++)
 	{
 		int* p = (int *)&spb + i * 128;
@@ -115,6 +130,7 @@ void Kernel::format()
 		Utility::copy<int>(p, (int *)pBuf->b_addr, 128);
 		this->BufMgr->Bwrite(pBuf);
 	}
+	
 	/* 格式化Inode区 */
 	for (int i = 0; i < FileSystem::INODE_ZONE_SIZE; i++)
 	{
@@ -148,7 +164,6 @@ int Kernel::open(char* pathname, int mode)
 	this->mode = mode;
 	this->pathname = this->dirp = pathname;
 	this->fileMgr->Open();
-	this->fileSys->Update();
 	return this->callReturn;
 }
 
@@ -179,7 +194,7 @@ int Kernel::close(int fd)
 	this->callInit();
 	this->fd = fd;
 	this->fileMgr->Close();
-	this->fileSys->Update();
+	//this->fileSys->Update();
 	return this->callReturn;
 }
 
@@ -213,7 +228,6 @@ int Kernel::fwrite(int writeFd, char* buf, int nbytes)
 void Kernel::ls()
 {
 	this->k_IOParam.m_Offset = 0;
-	this->getInodeTable()->IGet(this->cdir->i_number);
 	this->k_IOParam.m_Count = this->cdir->i_size / (DirectoryEntry::DIRSIZ + 4);
 	Buf* pBuf = NULL;
 	while (true)
@@ -223,7 +237,6 @@ void Kernel::ls()
 		{
 			if (pBuf != NULL)
 				this->getBufMgr()->Brelse(pBuf);
-			this->error = Kernel::NOENT;
 			break;
 		}
 
@@ -246,7 +259,6 @@ void Kernel::ls()
 		cout << this->dent.name << " ";
 	}
 	cout << endl;
-	this->getInodeTable()->IPut(this->cdir);
 }
 
 void Kernel::fseek(int seekFd, int offset, int ptrname)

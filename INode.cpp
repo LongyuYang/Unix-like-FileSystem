@@ -108,10 +108,10 @@ void Inode::WriteI()
 		k->k_IOParam.m_Offset += nbytes;
 		k->k_IOParam.m_Count -= nbytes;
 		if ((k->k_IOParam.m_Offset % Inode::BLOCK_SIZE) == 0)	/* 如果写满一个字符块 */
-			/* 以异步方式将字符块写入磁盘，进程不需等待I/O操作结束，可以继续往下执行 */
+			/* 以异步方式将字符块写入磁盘 */
 			bufMgr->Bawrite(pBuf);
 		else /* 如果缓冲区未写满 */
-			/* 将缓存标记为延迟写，不急于进行I/O操作将字符块输出到磁盘上 */
+			/* 将缓存标记为延迟写 */
 			bufMgr->Bdwrite(pBuf);
 
 		/* 文件长度增加 */
@@ -302,7 +302,6 @@ void Inode::ITrunc()
 	this->i_size = 0;
 	/* 增设IUPD标志位，表示此内存Inode需要同步到相应外存Inode */
 	this->i_flag |= Inode::IUPD;
-	/* 清大文件标志 和原来的RWXRWXRWX比特*/
 	this->i_mode &= ~(Inode::ILARG & Inode::IRWXU & Inode::IRWXG & Inode::IRWXO);
 	this->i_nlink = 1;
 }
