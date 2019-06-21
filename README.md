@@ -45,7 +45,7 @@ fseek [fd] [offset] [ptrname]
 ```
 - Run `fdelete` to delete a file:
 ```
-fdelete  [dir]
+fdelete [dir]
 ```
 - To copy a file from Windows to the disk, run:
 ```
