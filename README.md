@@ -47,10 +47,6 @@ fseek [fd] [offset] [ptrname]
 ```
 fdelete [dir]
 ```
-- To copy a file from Windows to the disk, run:
-```
-fmount [dir1] [dir2]
-```
 - To quit the file system, run:
 ```
 quit
